@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 日志节点， status 为 默认 日志 级别 -->
+
+<Configuration status="INFO">
+	<!-- 日志目录配置 -->
+	<properties>
+		<property name="PATTERN">[%-5p][%d(%r)][%t] %l: %m %n</property>
+		<!-- <property name="LOG_DIR">F:/Data/Temp</property> -->
+		<property name="LOG_DIR">${sys:catalina.home}</property> 
+		<property name="LOG_PATH">/logs/sap/</property>
+	</properties>
+
+	<Appenders>
+	 
+	
+		<!-- 控制台日志 -->
+		<Console name="consoleFile" target="SYSTEM_OUT">
+			<PatternLayout pattern="${PATTERN}" />
+		</Console>
+
+		<!-- 开发日志 -->
+		<!-- fileName：日志保存目录和文件名 filePattern：日志转储名，一天一个文件，如果要改为一小时一个文件，需要配置为 yyyy-MM-dd 
+			HH -->
+		<RollingRandomAccessFile name="developFile"
+			append="true" fileName="${LOG_DIR}${LOG_PATH}develop/develop.log"
+			filePattern="${LOG_DIR}${LOG_PATH}develop/%d{yyyy-MM-dd}-%i.log.zip">
+
+			<!-- 日志输出格式 -->
+			<PatternLayout charset="UTF-8" pattern="${PATTERN}" />
+
+			<!-- 转储规则， TimeBased为备份文件触发颗粒度； SizeBasedTriggeringPolicy 为文件超大时备份阀值 -->
+			<Policies>
+				<TimeBasedTriggeringPolicy interval="1" />
+				<SizeBasedTriggeringPolicy size="10 MB" />
+			</Policies>
+
+			<!-- 指定最多保存的文件个数 -->
+			<DefaultRolloverStrategy max="5" />
+		</RollingRandomAccessFile>
+
+		<RollingRandomAccessFile name="alarmFile"
+			append="true" fileName="${LOG_DIR}${LOG_PATH}alarm/alarm.log"
+			filePattern="${LOG_DIR}${LOG_PATH}alarm/alarm.log-%d{yyyy-MM-dd}.log">
+			<PatternLayout pattern="%m%n" charset="UTF-8" />
+			<Policies>
+				<TimeBasedTriggeringPolicy interval="1"
+					modulate="true" />
+				<SizeBasedTriggeringPolicy size="1024 MB" />
+			</Policies>
+		</RollingRandomAccessFile>
+
+		<RollingRandomAccessFile name="operationFile"
+			append="true" fileName="${LOG_DIR}${LOG_PATH}operation/operation.log"
+			filePattern="${LOG_DIR}${LOG_PATH}operation/operation.log-%d{yyyy-MM-dd}.log">
+			<PatternLayout pattern="%m%n" charset="UTF-8" />
+			<Policies>
+				<TimeBasedTriggeringPolicy interval="1"
+					modulate="true" />
+				<SizeBasedTriggeringPolicy size="1024 MB" />
+			</Policies>
+		</RollingRandomAccessFile>
+
+		<RollingRandomAccessFile name="runFile"
+			append="true" fileName="${LOG_DIR}${LOG_PATH}run/run.log"
+			filePattern="${LOG_DIR}${LOG_PATH}run/run.log-%d{yyyy-MM-dd}.log">
+			<PatternLayout pattern="%m%n" charset="UTF-8" />
+			<Policies>
+				<TimeBasedTriggeringPolicy interval="1"
+					modulate="true" />
+				<SizeBasedTriggeringPolicy size="1024 MB" />
+			</Policies>
+		</RollingRandomAccessFile>
+
+		<RollingRandomAccessFile name="interfaceFile"
+			append="true" fileName="${LOG_DIR}${LOG_PATH}interface/interface.log"
+			filePattern="${LOG_DIR}${LOG_PATH}interface/interface.log-%d{yyyy-MM-dd}.log">
+			<PatternLayout pattern="%m%n" charset="UTF-8" />
+			<Policies>
+				<TimeBasedTriggeringPolicy interval="1"
+					modulate="true" />
+				<SizeBasedTriggeringPolicy size="1024 MB" />
+			</Policies>
+		</RollingRandomAccessFile>
+		
+		<!-- 控制信息打印的配置 by zhangbohu -->
+		<RollingRandomAccessFile name="controlFile"
+			append="true" fileName="${LOG_DIR}${LOG_PATH}control/control.log"
+			filePattern="${LOG_DIR}${LOG_PATH}control/control.log-%d{yyyy-MM-dd}.log">
+			<PatternLayout pattern="%m%n" charset="UTF-8" />
+			<Policies>
+				<TimeBasedTriggeringPolicy interval="1"
+					modulate="true" />
+				<SizeBasedTriggeringPolicy size="1024 MB" />
+			</Policies>
+		</RollingRandomAccessFile>
+		
+	</Appenders>
+
+	<Loggers>
+		<!--过滤掉spring等无用的debug信息 -->
+		<logger name="org.springframework.scheduling" level="OFF"></logger>
+		<logger name="org.springframework" level="OFF"></logger>
+		<logger name="org.apache.struts2" level="OFF"></logger>
+		<logger name="org.apache.http" level="OFF"></logger>
+		<logger name="com.opensymphony.xwork2" level="OFF"></logger>
+		<logger name="org.hibernate" level="OFF"></logger>
+		<logger name="com.mchange.v2" level="OFF"></logger>
+		<logger name="net.sf.ehcache" level="OFF"></logger>
+		<logger name="org.quartz.core.QuartzSchedulerThread" level="OFF"></logger>
+		<logger name="org.quartz.utils.UpdateChecker" level="OFF"></logger>
+		<logger name="org.mybatis" level="OFF"></logger>
+		<logger name="org.mybatis.spring.SqlSessionUtils" level="OFF"></logger>
+		<logger name="org.mybatis.spring.transaction.SpringManagedTransaction"
+			level="OFF"></logger>
+
+
+		<Logger name="alarm" additivity="false">
+			<AppenderRef ref="alarmFile" />
+		</Logger>
+
+		<Logger name="run" additivity="false">
+			<AppenderRef ref="runFile" />
+		</Logger>
+		 
+		<Logger name="operation" additivity="false">
+			<AppenderRef ref="operationFile" />
+		</Logger>
+
+		<Logger name="interface" additivity="false">
+			<AppenderRef ref="interfaceFile" />
+		</Logger>
+
+		<!-- 可直接添加level进行日志级别控制 。additivity=false 为不受root控制 -->
+		<Logger name="develop" additivity="false">
+			<AppenderRef ref="developFile" />
+			<AppenderRef ref="consoleFile" />
+		</Logger>
+		
+		<!-- 控制信息打印 by zhangbohu -->
+		<Logger name="controlMessage" additivity="false">
+			<AppenderRef ref="controlFile" />
+		</Logger>
+		
+		<Root level="debug" includeLocation="true">
+			<appender-ref ref="developFile" />
+			<!-- 系统发布的时候注释下面语句 -->
+			<appender-ref ref="consoleFile" />
+		</Root>
+	</Loggers>
+</Configuration>

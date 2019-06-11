@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html class="login-bg">
+
+	<head>
+		<title>用户登录</title>
+
+		<head>
+		<title>自组网网管系统</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		
+		<script src="js/angular.min.js"></script>
+		<!-- bootstrap -->
+		<link href="css/bootstrap.css" rel="stylesheet" />	
+		<link href="css/bootstrap-responsive.css" rel="stylesheet" />			
+		<!-- global styles -->
+		<link rel="stylesheet" type="text/css" href="css/layout.css" />	
+		<link rel="stylesheet" type="text/css" href="css/signin.css" />	
+		<!-- bootstrap table css -->
+		<link rel="stylesheet" type="text/css" href="css/bootstrap-table.css" />	
+	   </head>
+     <body>
+	  <div>		
+		<div class="row-fluid login-wrapper">
+			<a href="#"> <h1><b>无基站自组网网管系统</b></h1> <br/><img class="logo" src="images/logo-white.png" />
+			</a>
+
+			<div class="span12 box">
+				<div class="content-wrap">
+					<h6>登录</h6>
+					<input id="username" class="span12" type="text" placeholder="用户名" />
+					<input id="password" class="span12" type="password" placeholder="密码" />
+					<p id="loginFail" style="display:none;">用户名或密码错误，请重新输入</p>
+					<!--<a href="#" class="forgot">忘记密码?</a>-->
+					<!--<div class="remember">
+						<input id="remember-me" type="checkbox" /> <label for="remember-me">记住我</label>
+					</div>-->
+					<div class="span12">
+						<a id="login" class="btn btn-primary">登录</a>
+					
+					</div>
+					
+					<p id="cp">
+		                ©2018&nbsp;ZCHX&nbsp;<a href="http://www.szcenterstar.com"
+		                 onmousedown="return ns_c({'fm':'behs','tab':'tj_duty'})">官网</a>&nbsp; 
+		                                           联系方式：：4008328588&nbsp;<i class="c-icon-icrlogo">
+		              </i>&nbsp;
+		           </p>
+		           
+				</div>
+
+			</div>		
+		  </div>		
+		</div>
+	</body>
+	<!-- scripts -->
+	<script src="js/jquery-3.1.1.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>		
+	<script type="text/javascript">	
+	$(document).ready(function() {			
+		var start = {};
+        $(document).keydown(function(event){
+			if(event.keyCode==13){
+				$("#login").click();
+			}
+		});//绑定回车事件--触发登陆
+		
+
+		$("#login").click(function(){
+			
+			var username = $("#username").val();
+			var password = $("#password").val();
+			
+	   	    $.ajax({
+		    	type : "POST",
+		 		url : "./user/login",	
+		 		data : JSON.stringify({
+					"uAccount" : username,
+					"uPwd" : password
+				}),
+		 		contentType : "application/json;charset=utf-8",
+		 		timeout : 5000,
+		 		dataType : "json",
+		 		success : function(data) {
+		 			if(data.code == 1000){
+		 				location.href = "home";
+		 			}else{
+		 				$("#loginFail").show();
+		 			}
+		 		}	 		
+	        });
+		    }
+	   	  ); 
+		
+	});
+	</script>
+
+</html>

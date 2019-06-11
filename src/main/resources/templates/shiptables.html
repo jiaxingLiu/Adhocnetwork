@@ -1,0 +1,545 @@
+<!-- <%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%> -->
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>自组网网管系统</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		
+		<script src="js/angular.min.js"></script>
+		<!-- bootstrap -->
+		<link href="css/bootstrap.css" rel="stylesheet" />			
+		<!-- global styles -->
+		<link rel="stylesheet" type="text/css" href="css/layout.css" />	
+		<!-- bootstrap table css -->
+		<link rel="stylesheet" type="text/css" href="css/bootstrap-table.css" />	
+		
+		<style type="text/css">
+				  		
+		  .btn-sm, .btn-group-sm > .btn {		 
+		    line-height: 1.0;
+		   }
+		   .modal-footer {
+            padding: 10px;
+		   }  	
+		   
+		</style>
+		
+	</head>
+	
+	<body>
+		<!-- navbar -->
+		<div class="navbar navbar-inverse" role="navigation">
+			<div class="container-fluid">
+				<div class="navbar-inner">
+					<div class="navbar-header">
+						<a class="navbar-brand" href="#">无基站自组网网管系统</a>
+					</div>
+					<!-- <ul class="nav navbar-nav navbar-right">
+						<li>
+							<a href="#" ng-bind="username"></a>
+						</li>
+						<li ng-hide="isLogin">
+							<a href="login.html"></a>
+						</li>
+						<li>
+							<a href="#" ng-click="logout()">注销</a>
+						</li>
+					</ul> -->
+				</div>
+			</div>
+		</div>
+		<!-- end navbar -->
+
+		<!-- sidebar -->
+		<div id="sidebar-nav">
+			<ul id="dashboard-menu">
+				<li>
+					<a href="home"> 
+
+					<span>基本信息</span>
+					</a>
+				</li>
+				<li>
+					<a href="adhoctables">
+						 <span>组网显示</span>
+					</a>
+				</li>
+				<li   class="active">
+					<a href="shiptables">
+					<div class="pointer">
+						<div class="arrow"></div>
+						<div class="arrow_border"></div>
+					 </div>
+					 	<span>船站显示</span>
+					</a>
+				</li>		
+				<li>
+					<a href="map"> 
+						<span>地图显示</span>
+					</a>
+				</li>
+			</ul>
+		</div>		
+		<!-- end sidebar -->		
+
+		<!-- main container -->
+		<div class="content" style="height: 100%">
+
+			<div class="container-fluid">
+				<div id="pad-wrapper">
+
+					<!-- products table-->
+					<!-- the script for the toggle all checkboxes from header is located in js/theme.js -->
+					<div class="table-wrapper products-table section">
+						<div class="row-fluid head">
+							<div class="span12">
+								<h4>船站信息列表</h4>
+							</div>
+							<div class="pull-right" style="margin-right:20px;margin-bottom:10px">
+								<button class="roleOfRefrech btn" onclick="_reload();" data-toggle="modal" style="color: white;background-color:green;">刷新</button>								
+							</div>
+						</div>
+
+					    <div class="row-fluid">
+					         <div id="bank" style="margin: 12px 10px">
+	   		                     <table id="shipTable"></table>
+	   		                 </div>
+					    </div>
+				    </div>
+			</div>
+		   </div>		
+		 </div> 
+		 		  <!-- 修改模态框 -->
+		<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="myUpdateModalLabel" aria-hidden="true"  style="display: none;">
+			<div class="modal-dialog" style="width: 1000px;height: 800px;">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+						<!-- <h4 class="modal-title" id="myModalLabel">船站详情</h4> -->
+					</div>
+					<div class="modal-body" >
+						<div class="table-wrapper products-table section" id="shipdiv">
+							<div class="row-fluid head">
+								<div class="span12">
+									<h4>船站信息</h4>
+								</div>
+							</div>
+						    <div class="row-fluid">
+						         <div id="bank" style="margin: 12px 10px">
+		   		                     <table id="shipDetailTable"></table>
+		   		                 </div>
+						    </div>
+					    </div>				 
+						<div class="table-wrapper products-table section" id="aerialsdiv">
+							<div class="row-fluid head">
+								<div class="span12">
+									<h4>天线信息</h4>
+								</div>
+							</div>
+						    <div class="row-fluid">
+						         <div id="bank" style="margin: 12px 10px">
+		   		                     <table id="aerialsDetailTable"></table>
+		   		                 </div>
+						    </div>
+					    </div>
+		           </div>		           
+		           <div class="modal-footer" style="text-align: center;">
+						<button type="button" id="cancleUpdate" class="btn btn-primary" data-dismiss="modal">返回</button>
+				   </div>
+				<!-- /.modal-content -->
+			</div>
+			<!-- /.modal-dialog -->
+		  </div>
+	   </div> 	
+	<!-- scripts -->
+	<script src="js/jquery-3.1.1.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>	
+	<script src="js/bootstrap-table.js"></script>
+	<script src="js/bootstrap-table-zh-CN.js"></script>	           
+	<script>
+		function _reload(){
+			window.location.reload();		
+		}
+	   $(document).ready(function() {
+		   //一分钟刷新一次页面
+		   window.setInterval("_reload()",60*1000);
+		   //操作按钮事件
+		   window.operateEvents = {				           
+	           'click .RoleOfedit': function (e, value, row, index) {
+	        	   //打开弹窗
+	        	   $("#editModal").modal('show');
+	        	   //加载数据
+	        	   getShipInfo(row.shipCode);
+	           }
+		   };
+		   //初始化表格
+		   $('#shipTable').bootstrapTable({					   
+			   "url" : "./adhoc/getAllShipInfo",	   
+			   "responseHandler":function(data){		   
+				   if(data.code==1000){ 
+					   if (data.data!= null) {
+						  
+				 			//先进行排序
+							var result = data.data.rows;
+							result = result.sort(function (a, b) {
+							    // 按节点ID字符串，进行排序
+							     let param1 = a.shipCode;
+							     let param2 = b.shipCode;
+							     return param1.localeCompare(param2, "zh");
+							});
+						   return {					
+							   "rows" : result
+						   };
+					   } else {
+						   return {
+							   "rows" : []
+						   }
+					   }
+				   }
+			    },				  
+				method : 'post',					
+				// table传递的固定参数
+				contentType : "application/json;charset=utf-8",// 必须要有！！！！
+				// data:data.data.shipLogList,
+				// toolbar: '#toolbar', //工具按钮用哪个容器
+				striped : true, // 是否显示行间隔色
+				cache : false, // 是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+				//pagination : true, // 是否显示分页（*）
+				paginationLoop : false,// 启用分页无限循环的功能,默认为true,设置为false
+				//sortable : true, // 是否启用排序
+				//sortOrder : "asc", // 排序方式
+				pageNumber : 1, // 初始化加载第一页，默认第一页
+				pageSize : 28, // 每页的记录行数（*）
+				pageList : [5, 10, 15], // 可供选择的每页的行数（*）
+				sidePagination : "server", // 分页方式：client客户端分页，server服务端分页（*）
+				// search: true, //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+				strictSearch : true,
+				// showColumns: true, //是否显示所有的列
+				//showRefresh: true, //是否显示刷新按钮
+				minimumCountColumns : 2, // 最少允许的列数
+				//clickToSelect : true, // 是否启用点击选中行
+				searchOnEnterKey : true,
+				sortable : true,	
+				columns : [
+					{
+					title : "船站编号",
+					field : "shipCode",
+					align : "center",
+					valign : "middle"
+					//sortable : true
+					}, {
+					title : "船站名称",
+					field : "shipName",
+					align : "center",
+					valign : "middle"
+			
+				},{
+					title : "船站IP",
+					field : "shipIp",
+					align : "center",
+					valign : "middle"
+					//sortable : true
+				},{
+					title : "船站端口",
+					field : "shipPort",
+					align : "center",
+					valign : "middle"
+					//sortable : true
+				},{
+					title : "安装高度",
+					field : "installHeight",
+					align : "center",
+					valign : "middle"
+					//sortable : true
+				},{
+					title : "安装日期",
+					field : "installDate",
+					align : "center",
+					valign : "middle"
+					//sortable : true
+				},{
+					title : "船站类型",
+					field : "shipType",
+					align : "center",
+					valign : "middle",
+					formatter:function (value, row, index) {				 				 
+						  if(value == "0"){
+							 return '本船';
+						  }else if(value == "1"){
+							 return '组网船';
+						  }else if(value == "2"){
+							 return '待组网船';
+						  }
+					}
+				},{
+					title : "船站状态",
+					field : "shipStatus",
+					align : "center",
+					valign : "middle",
+					formatter:function (value, row, index) {				 				 
+						  if(value == "0"){
+							 return '<span style="color:red">断开</span>';
+						  }else if(value == "1"){
+							 return '<span style="color:green">连接中</span>';
+						  }
+					}							
+				} ,{
+	                field: 'operate',
+	                title: '操作',
+	                align: 'center',
+	                width : 100,
+	                events: operateEvents,
+	                formatter: operateFormatter
+	             }]
+			});
+		   function operateFormatter(value, row, index) {
+			      return [
+			      '<button type="button"  class="RoleOfedit btn btn-primary  btn-sm">船站详情</button>'
+			      ].join('');
+			};
+			
+			//----初始化船站详细信息表格--------------------
+			 
+			 $('#shipDetailTable').bootstrapTable({					   			   
+					contentType : "application/json;charset=utf-8",// 必须要有！！！！
+					striped : true, // 是否显示行间隔色
+					cache : false, // 是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+					//pagination : true, // 是否显示分页（*）
+					paginationLoop : false,// 启用分页无限循环的功能,默认为true,设置为false
+					sortable : true, // 是否启用排序
+					//sortOrder : "ID asc", // 排序方式
+					pageNumber : 1, // 初始化加载第一页，默认第一页
+					pageSize : 25, // 每页的记录行数（*）
+					pageList : [5, 10, 15], // 可供选择的每页的行数（*）
+					sidePagination : "server", // 分页方式：client客户端分页，server服务端分页（*）
+					// search: true, //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+					strictSearch : true,
+					// showColumns: true, //是否显示所有的列
+					// showRefresh: true, //是否显示刷新按钮
+					minimumCountColumns : 2, // 最少允许的列数
+					//clickToSelect : true, // 是否启用点击选中行
+					searchOnEnterKey : true,
+					sortable : true,	
+					/*onCheck:function(row, $element){
+						 $('#opeLogsTable').tableExport.reset();
+					},
+					onUncheck:function(row, $element){
+						 $('#opeLogsTable').tableExport.reset();			
+					},*/
+					columns : [
+						/*{
+			                checkbox: true,  
+			                visible: true     //是否显示复选框 (先这样) 
+			            },*/{
+						title : "船站编号",
+						field : "shipCode",
+						align : "center",
+						valign : "middle"
+						/* 					
+						sortable : true,
+					    formatter: function (value, row, index) {				 				 
+							  return index+1;;
+							 } */
+						}, {
+						title : "船站名称",
+						field : "shipName",
+						align : "center",
+						valign : "middle"
+						/* sortable : true,
+						formatter: function (value, row, index) {	
+							  var date = new Date(value);
+							  return date.toLocaleString();
+							 }	 */				
+					}, {
+						title : "AIS经度",
+						field : "aislng",
+						align : "center",
+						valign : "middle",						
+					}, {
+						title : "AIS纬度",
+						field : "aislat",
+						align : "center",
+						valign : "middle"
+						//sortable : true
+					}, {
+						title : "GPS经度",
+						field : "gpslng",
+						align : "center",
+						valign : "middle",						
+					}, {
+						title : "GPS纬度",
+						field : "gpslat",
+						align : "center",
+						valign : "middle"
+						//sortable : true
+					}, {
+						title : "船站Mmsi",
+						field : "shipMmsi",
+						align : "center",
+						valign : "middle"
+						//sortable : true
+					}, {
+						title : "船站类型",
+						field : "shipType",
+						align : "center",
+						valign : "middle",
+						formatter:function (value, row, index) {				 				 
+							 if(value == "0" ){
+								 return '本船';
+							  }else if(value == "1"){
+								 return '组网船';
+							  }else{
+								  return '待组网船'; 
+							  }
+						}
+					}, {
+						title : "船站IP",
+						field : "shipIp",
+						align : "center",
+						valign : "middle"
+						//sortable : true
+					}, {
+						title : "船站端口",
+						field : "shipPort",
+						align : "center",
+						valign : "middle"
+						//sortable : true
+					}, {
+						title : "安装日期",
+						field : "installDate",
+						align : "center",
+						valign : "middle"
+						//sortable : true
+					}, {
+						title : "安装高度",
+						field : "installHeight",
+						align : "center",
+						valign : "middle"
+						//sortable : true
+					}, {
+						title : "船站状态",
+						field : "shipStatus",
+						align : "center",
+						valign : "middle",
+						formatter:function (value, row, index) {				 				 
+							 if(value == "0" ){
+								 return '<span style="color:red">未组网</span>';
+							  }else if(value == "1"){
+								 return '<span style="color:green">已组网</span>';
+							  }
+						}
+					}]
+				});
+			 
+				//---初始化天线信息表格-------
+				
+			   $('#aerialsDetailTable').bootstrapTable({
+					// url:
+					// "${pageContext.request.contextPath}/statistics/statisticsHistory",//这个接口需要处理bootstrap
+					// table传递的固定参数
+					contentType : "application/json;charset=utf-8",// 必须要有！！！！
+					// data:data.data.shipLogList,
+					// toolbar: '#toolbar', //工具按钮用哪个容器
+					striped : true, // 是否显示行间隔色
+					cache : false, // 是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+					//pagination : true, // 是否显示分页（*）
+					paginationLoop : false,// 启用分页无限循环的功能,默认为true,设置为false
+					sortable : true, // 是否启用排序
+					//sortOrder : "ID asc", // 排序方式
+					pageNumber : 1, // 初始化加载第一页，默认第一页
+					pageSize : 5, // 每页的记录行数（*）
+					pageList : [5, 10, 15], // 可供选择的每页的行数（*）
+					sidePagination : "server", // 分页方式：client客户端分页，server服务端分页（*）
+					// search: true, //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+					strictSearch : true,
+					// showColumns: true, //是否显示所有的列
+					//showRefresh: true, //是否显示刷新按钮
+					minimumCountColumns : 2, // 最少允许的列数
+					//clickToSelect : true, // 是否启用点击选中行
+					searchOnEnterKey : true,
+					sortable : true,	
+					/*onCheck:function(row, $element){
+						 $('#opeLogsTable').tableExport.reset();
+					},
+					onUncheck:function(row, $element){
+						 $('#opeLogsTable').tableExport.reset();			
+					},*/
+					columns : [
+					{
+						title : "天线编号",
+						field : "aerialsCode",
+						align : "center",
+						valign : "middle"
+						}, {
+						title : "天线IP",
+						field : "aerialsIp",
+						align : "center",
+						valign : "middle"
+					}, {
+						title : "天线类型",
+						field : "aerialsType",
+						align : "center",
+						valign : "middle",						
+					}, {
+						title : "频点",
+						field : "point",
+						align : "center",
+						valign : "middle"
+						//sortable : true
+					},{
+						title : "SSID",
+						field : "ssid",
+						align : "center",
+						valign : "middle"
+						//sortable : true
+					},{
+						title : "状态",
+						field : "status",
+						align : "center",
+						valign : "middle",
+						formatter:function (value, row, index) {				 				 
+							 if(value == "0" ){
+								 return '<span style="color:red">断开</span>';
+							  }else if(value == "1"){
+								 return '<span style="color:green">连接中</span>';
+							  }
+						}
+					}]
+				});
+	   });
+	   
+	   /**
+	    *获取指定船站及天线的信息
+	    */  
+	    function getShipInfo(shipCode){
+	   	
+	   		$.ajax({
+	       		type : "POST",
+	    		url : "./adhoc/getShipInfoByShipCode",	
+	    		data : shipCode,
+	    		contentType : "application/json;charset=utf-8",
+	    		timeout : 5000,
+	    		dataType : "json",
+	    		success : function(data) {	
+					//先进行排序
+					var aerialsList = data.data.rows[0].aerialsList;
+					aerialsList = aerialsList.sort(function (a, b) {
+					    // 按节点ID字符串，进行排序
+					     let param1 = a.aerialsCode;
+					     let param2 = b.aerialsCode;
+					     return param1.localeCompare(param2, "zh");
+					});
+	    		    // 清理表格数据				
+	    			$("#shipDetailTable").bootstrapTable("removeAll");
+	    			$("#shipDetailTable").bootstrapTable("append",data.data.rows);	
+	    		    // 清理表格数据				
+	    			$("#aerialsDetailTable").bootstrapTable("removeAll");
+	    			$("#aerialsDetailTable").bootstrapTable("append",aerialsList);	
+	    		}	 		
+	        });
+	    }
+	</script>
+	</body>
+</html>

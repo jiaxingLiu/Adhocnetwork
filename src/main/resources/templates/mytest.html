@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<script src="js/jquery-3.1.1.min.js"></script>
+
+<!-- jquery ztree -->
+<link rel="stylesheet" href="zTree/zTreeStyle/zTreeStyle.css" type="text/css">
+<!-- jquery ztree -->
+<script type="text/javascript" charset="UTF-8" src="zTree/jquery.ztree.core.js"></script>
+<script type="text/javascript" charset="UTF-8" src="zTree/jquery.ztree.excheck.js"></script>
+
+<script type="text/javascript">
+
+//单位Id(向下展开时父节点的id)
+var	rootId = null;
+//更改对应的科室id
+var agencyId = null;
+//点击行时获取officeId
+var officeId = null;
+//zTree
+$(function(){   
+	
+	//setting里的数据可能要相应修改
+    var setting = {
+			data: {
+				simpleData: {
+					enable: true,
+					idKey: "id",
+					pIdKey: "pid",
+					rootPId: 0
+				}
+			},
+			callback:{
+				//onExpand:zTreeOnExpand
+				onClick:zTreeOnClick,
+				beforeAsync:function(treeId, treeNode){
+					console.info(arguments);
+				},
+				onAsyncSuccess:function(){       //默认tree是撑开的
+		        	var treeObj = $.fn.zTree.getZTreeObj("treeDemo");
+		        	treeObj.expandAll(true);
+		        }
+			},
+			async:{
+				enable:true,
+				dataType: "json",
+				url:"./adhoc/getAllAdhocTree",
+				dataFilter:function(treeId, parentNode, responseData){
+					//在初始化时,表格默认显示第一个单位机构的科室列2018/03/15
+					if(responseData.data.rows!=null){
+					 if(responseData.data.rows[0]["pid"]=="0" || responseData.data.rows[0]["pid"]==0){
+						 rootId = responseData.data.rows[0]["id"];  //注释后,修改科室后默认为修改后科室列表
+						 //$("#addAgency").val(responseData.data.rows[0]["name"]);
+					 }
+					 //$('#apartmentTable').bootstrapTable("removeAll");
+				     //$('#apartmentTable').bootstrapTable("refresh",{"silent":true});
+					}
+					return responseData.data.rows;
+				}
+			}
+			
+		};     
+
+    $.fn.zTree.init($("#treeDemo"),setting);
+    //单击展开节点，添加事件(加载数据到表格)
+    function zTreeOnClick(event, treeId, treeNode) {
+        console.info(treeNode.id + ", " + treeNode.name);       
+        //加判断--->如果不是根节点,不发请求(2018/03/08)
+        var  treeObj = $.fn.zTree.getZTreeObj("treeDemo");
+        var  nodes = treeObj.getSelectedNodes();
+        console.info(nodes);
+        if (nodes.length > 0) {
+        	var isParent = nodes[0]["level"];
+        }
+        console.info(isParent);
+        if(isParent==0){
+        	 //点击添加时-->所属单位id(如果是父级单位才行)
+        	 //科室名称-->也是父级单位才行
+        	 rootId = treeNode.id;//当前节点的id
+        	 //$("#addAgency").val(treeNode.name);
+        	 
+//		     $('#apartmentTable').bootstrapTable("removeAll");
+		     //$('#apartmentTable').bootstrapTable("refresh",{"silent":true});
+		     //$("#userModal").hide();
+        }else{
+        	officeId = treeNode.id;
+        	/**
+     	    $.ajax({
+     	    	type : "POST",
+     	 		url : "../zchx/permission/findSysUserByOfficeId",	
+     	 		data : JSON.stringify(officeId),
+     	 		contentType : "application/json;charset=utf-8",
+     	 		timeout : 5000,
+     	 		dataType : "json",
+     	 		success : function(data) {
+     	 			//请求成功之后填充原表	 			
+     	 		    // 清理表格数据				
+     	 			//$('#userRelationTable').bootstrapTable("removeAll");
+//     	 			$('#userRelationTable').bootstrapTable("append",data.data.rows);	
+     	 			//$('#userRelationTable').bootstrapTable("refresh",{"silent":true});
+     	 		}	 		
+     	     });
+        	
+     	    $("#userModal").show();
+        	*/
+        }
+        // TODO 初始化默认列表查询
+        // 表格里面进行ajax请求, 再这里调用refresh方法  -->表格会重新发起请求并填充数据     
+    };
+    
+ });
+ 
+function _onClick(){
+
+	    $.ajax({
+    	type : "POST",
+ 		url : "./adhoc/sendadhocinfo",	
+ 		data : JSON.stringify({
+			"code" : "1",
+			"msg" : "张三"
+		}),
+ 		contentType : "application/json;charset=utf-8",
+ 		timeout : 5000,
+ 		dataType : "json",
+ 		success : function(data) {
+ 			if(data.code == 1000){
+ 				alert(1);
+ 			}else{
+ 				alert(2);
+ 			}
+ 		}	 		
+    });
+    }
+
+</script>
+
+<style>
+   table { width: 800px;line-height: 25px; text-align: center; border-collapse: separate;}  
+   .texttd{border-collapse:   separate;   border-spacing:   10px;background: #ADFEDC}
+   .texttd-black{border-collapse:   separate;   border-spacing:   10px;background: #9D9D9D}
+   .linetd{border-bottom:#cccccc solid 2px;}
+</style>
+<body>
+	<button onclick="_onClick()">点击这里</button>
+
+	<div class="content_wrap" style="margin:0 10px">
+		<div class="zTreeDemoBackground left">
+			<ul id="treeDemo" class="ztree"></ul>
+		</div>
+	</div>
+<table >
+<tr>
+	<th width="60px" >本船-船1</th>
+	<th width="20px"></th>
+	<th width="60px">组网船-船2</th>
+	<th width="20px"></th>
+	<th width="60px">组网船-船3</th>
+	<th width="20px"></th>
+	<th width="60px">组网船-船4</th>
+	<th width="20px"></th>
+	<th width="60px">组网船-船5</th>
+	<th width="20px"></th>
+	<th width="60px">组网船-船6</th>
+</tr>
+<tr>
+	<td rowspan="2" class="texttd">天线A1</td>
+	<td class="linetd"></td>
+	<td rowspan="2" class="texttd-black">天线B2</td>
+	<td ></td>
+	<td rowspan="2" class="texttd">天线C3</td>
+	<td class="linetd"></td>
+	<td rowspan="2" class="texttd-black">天线D4</td>
+	<td ></td>
+	<td rowspan="2" class="texttd-black">天线E5</td>
+	<td ></td>
+	<td rowspan="2" class="texttd-black">天线F6</td>
+
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+
+</tr>
+<tr>
+	<td rowspan="2" class="texttd">天线A1</td>
+	<td class="linetd"></td>
+	<td rowspan="2" class="texttd">天线B2</td>
+	<td ></td>
+	<td rowspan="2" class="texttd">天线C3</td>
+	<td></td>
+	<td rowspan="2" class="texttd">天线D4</td>
+	<td ></td>
+	<td rowspan="2" class="texttd">天线E5</td>
+	<td></td>
+	<td rowspan="2" class="texttd">天线F6</td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+</table>
+
+</body>
+</html>

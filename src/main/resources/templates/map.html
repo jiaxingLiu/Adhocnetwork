@@ -1,0 +1,663 @@
+<!-- <%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%> -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>自组网网管系统</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<!-- <script src="js/angular.min.js"></script>
+	bootstrap -->
+<link href="css/bootstrap.css" rel="stylesheet" />
+<!-- global styles -->
+<link rel="stylesheet" type="text/css" href="css/layout.css" />
+<!-- bootstrap table css -->
+<link rel="stylesheet" type="text/css" href="css/bootstrap-table.css" />
+<!-- jquery confirm -->
+<link rel="stylesheet" type="text/css"
+	href="jquery-confirm/jquery-confirm.min.css" />
+<link rel="stylesheet" type="text/css" href="js/leaflet/leaflet.css" />
+
+<style type="text/css">
+body, html, #allmap {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	margin: 0;
+	font-family: "微软雅黑";
+}
+
+.top-layer-select {
+	z-index: 999999999;
+	position: absolute;
+}
+
+.anim-tooltip {
+	opacity: 1;
+	color: #000000;
+	background-color: rgba(0,0,0,0);
+	font:12px/14px "Times New Roman","微软雅黑","宋体";
+	font-weight:bold ;
+	border:0px solid #000;
+	/*color: #00ffff;*/
+}
+</style>
+<script type="text/javascript" src="js/baidumap_offline_v2_load.js"></script>
+<script type="text/javascript" src="js/modules/SearchInfoWimdow_min.js"></script>
+<link rel="stylesheet" href="js/images/SearchInfoWindow_min.css" />
+<link rel="stylesheet" type="text/css" href="css/baidu_map_v2.css" />
+
+</head>
+<body ng-app="map" ng-controller="mapCtrl">
+
+	<!-- navbar -->
+	<div class="navbar navbar-inverse" role="navigation">
+		<div class="container-fluid">
+			<div class="navbar-inner">
+				<div class="navbar-header">
+					<a class="navbar-brand" href="#">无基站自组网网管系统</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- end navbar -->
+
+
+	<!-- sidebar -->
+	<div id="sidebar-nav">
+		<ul id="dashboard-menu">
+			<li>
+				<a href="home"> 
+				<span>基本信息</span>
+				</a>
+			</li>
+			<li>
+				<a href="adhoctables">
+					 <span>组网显示</span>
+				</a>
+			</li>
+			<li>
+				<a href="shiptables">
+				 	<span>船站显示</span>
+				</a>
+			</li>		
+			<li   class="active">
+				<a href="map"> 					
+					<span>地图显示</span>
+				</a>
+			</li>
+		</ul>
+	</div>
+	<!-- end sidebar -->
+
+
+	<!-- main container -->
+	<div class="content" style="height: 94%">
+		<!-- 选择岸站 
+		<select class="node" id="nodeBanks" onchange="nodeChange()">
+			<option value="0">----请选择岸站----</option>
+		</select> -->
+
+		<!-- 地图控件 -->
+		<div style="position: absolute; left: 0; top: 10; height: 95%;"
+			id="allmap"></div>
+		<div class="col-sm-1"></div>
+<!-- 
+		<div class="col-sm-2">
+			<select name="bigname" id="bigname"
+				class="form-control top-layer-select">
+				<option value="-1">---请选择公司---</option>
+				<option value="1">徐闻港航</option> 
+				<option value="2">广东双泰</option> 
+				<option value="3">海口能运</option>
+				<option value="4">海南海峡</option> 
+				<option value="5">海南祥隆</option>			
+				<option value="6">徐闻海运</option>
+				<option value="7">粤海铁</option>				
+			</select>
+		</div>
+		<div class="col-sm-2">
+			岸站的选择框 
+			<select id="nodeBanks" onchange="nodeBanksChange()"
+				class="form-control top-layer-select" style="display: none">
+				<option value="-1">----选择岸站名称----</option>
+			</select>
+			
+			船站的选择框
+			<select id="nodeShips" onchange="nodeShipsChange()"
+				class="form-control top-layer-select" style="display: none">
+				<option value="-1">----选择船站名称----</option>
+			</select>
+		</div>
+ -->
+
+	</div>
+
+</body>
+<!-- scripts -->
+<script src="js/jquery-3.1.1.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/easyui-js/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="js/easyui-js/easyui-lang-zh_CN.js"></script>
+<script type="text/javascript" src="js/leaflet/leaflet.js"></script>
+<script src="http://pv.sohu.com/cityjson?ie=utf-8"></script>  
+<script>
+	var Lmap;
+	var bankArray = {};// 用来存放岸站信息的集合 
+	var shipArray = {}; //用来存放船站信息的集合
+	var markerArray = []; //marker标记数组
+	var redboxmarker = '';//用来存放选中船的marker
+	var setsId=-1; //记录点击船红框
+	$.parser.onComplete = function(){
+		$("#allmap").height($(document.body).height());
+	    //init map
+	    Lmap = this.map =  L.map('allmap',{//20.612831115722656,"lon":109.57124328613281  //22.73154286867007,114.48782131075862
+	        maxZoom:17
+	    }).setView([22.563293,114.297637],12);  //   //20.149809, 110.182650
+	    Lmap.on('click',function(e){
+	    	console.log(e);
+	    
+	    	/* if('' != setsId  || (null != redboxmarker && '' != redboxmarker)){
+		    	setsId='';
+		    	Lmap.removeLayer(redboxmarker);
+		        console.log(e);
+	    	} */
+	    
+	    });
+	    Lmap.on('zoomend', function(e) {	    		    		    	
+	    	cleanMarker(markerArray);
+	    	updateMap();	    	
+	    });
+	   /*  var str = 'http://haitu.haiangang.com';
+	    if("121.10.68.231" == returnCitySN["cip"]){
+	    	str = 'http://192.168.8.199'
+	    } */
+	    //L.tileLayer(str+':1889/osm_tiles_base/{z}/{x}/{y}.png', {
+	    L.tileLayer('{z}/{x}/{y}.png', {
+	    //L.tileLayer('http://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {
+	    	tms : true ,
+	        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+	    }).addTo(Lmap);
+	
+	    
+	    
+	addlabel();							 //加入中国的label信息 
+	//bankIcon:港航十艘船标志    bankIcon2:港航其他客滚船标志  bankIcon3:其他客滚船
+	var bankIcon = L.icon({iconUrl: 'images/bankicon2.png', iconSize: [25,25]});
+	var redboxIcon = L.icon({iconUrl: 'images/redbox.png', iconSize: [40,40]});
+	/* var shipIcon = L.icon({iconUrl: 'images/shipicon1.png', iconSize: [20,20]});
+	var shipIcon2 = L.icon({iconUrl: 'images/shipicon2.png', iconSize: [20,20]});
+	var shipIcon3 = L.icon({iconUrl: 'images/shipicon_other.png', iconSize: [15,15]}); */
+	var shipIcon = RotateIcon .makeIcon('images/shipicon1.png');
+	var shipIcon2 = RotateIcon .makeIcon('images/shipicon2.png');
+	var shipOffline = RotateIcon .makeIcon('images/offlineship.png');
+	var shipIcon3 = RotateIcon .makeIcon('images/shipicon_other.png');
+	
+	
+		//当点击 父select 后 :
+		$("#bigname").change(function() {
+	       //  getSelectVal();
+	        var target = $("#bigname").val();
+	        if(target != -1 ){	        	
+				//获取下拉菜单的控件 
+				var nodeShips = $("#nodeShips");
+				nodeShips.empty();
+				var shipOptions = '<option value=-1> ---请选择---</option>';			
+				for (var i = 0; i < shipArray.length; i++) {
+					if(target == shipArray[i].version ){
+						shipOptions += '<option value='+i+'>'+shipArray[i].sName+'</option>';
+					}
+				}
+				nodeShips.append(shipOptions);
+				$("#nodeShips").show();
+	        }else{
+				$("#nodeShips").hide();
+			}
+		});
+		//addMap(); //页面初始化时候 先进行一次节点的查询
+	 	updateMap(); 
+		
+		/*实现--定时刷新 获取岸站banks节点信息 / 获取船站ships节点信息的功能
+		$interval(function(){
+		},60000);*/
+		/* 
+		//查询最新的节点对象的位置,生成节点 
+		function addMap(){
+			
+			//获取banks的点信息 
+			 $.post("./lap/laps", function(req) {
+				var bankOptions = '';
+				if (req.code == 1000) {
+					//遍历得到JOSN中的项的数据(先将json数据转换成标注的javascript数据 )
+					var data = req.data.rows; //转换为标准的javaScript 数据 
+					//获取下拉菜单的控件 
+					var nodeBanks = $("#nodeBanks");
+					var n = 0 ;
+					//对弹出的消息窗口进行 尺寸规定 
+					var opts = {
+						width:250,
+						height:80,
+						title:"岸站信息",
+						enableMessage:false
+					};
+					$.each(data,function(index,obj){
+						var content ="名称:"+obj.lName+"<br/>经度:"+obj.lLongitude+"<br/>纬度:"+obj.lLatitude+"<br/>高度:"+obj.lHeight+"<br/>IP:"+obj.lIp+"<br/>安装日期:"+obj.lInstallDate;						
+						var redMarker= new L.marker([obj.lLatitude, obj.lLongitude], {icon: redboxIcon});
+						var marker = L.marker([obj.lLatitude, obj.lLongitude], {icon: bankIcon})//.addTo(Lmap) 
+							.bindTooltip(obj.lName, {
+	                        	permanent : false,
+	                        	offset : [ 0, 8 ],// 偏移
+	                        	direction : "bottom",// 放置位置
+	                        	className : 'anim-tooltip'// CSS控制
+	                    	}).openTooltip().bindPopup(content);							
+						marker.on('click', function(e) {													
+							if(redboxmarker != ""){
+								Lmap.removeLayer(redboxmarker);	
+							}
+							redboxmarker=redMarker;
+							Lmap.addLayer(redMarker);
+						});
+						Lmap.addLayer(marker);
+						bankArray[n] = obj; 							//往集合中增加 数据 
+						bankOptions += '<option value='+n+'>'+obj.lName+'</option>';
+						n++;
+						//加入名称显示
+					});
+					//将select 中加入 所有option
+					nodeBanks.append(bankOptions);
+				} else {
+					$scope.ships = null;
+				}
+			}) 	
+			
+			
+			//岸站前端点阵集合
+			$.post("./area/areas", function(req) {
+				if(req.code=1000){
+					var size = req.data.total;
+					var onedata =req.data.rows;
+                    for(var i=0;i<size;i++){	
+					    var arrayObj = new Array();					    
+					    for (var j = 0; j < onedata[i]["point"].length; j++) {
+					    	//alert("精度"+onedata[i]["point"][j].lon);
+					    	//alert("韋度"+onedata[i]["point"][j].lat);
+					    	var array = new Array();
+					    	array.push(onedata[i]["point"][j].latitude);
+					    	array.push(onedata[i]["point"][j].longitude);
+					    	arrayObj.push(array);
+						} 
+					    var polygon = L.polygon(arrayObj,{
+					    	  color: 'blue',
+					    	  fillColor: 'rgba(0,0,0,0)'
+					    		 
+					    	} ).addTo(Lmap);//{color: 'blue'} 
+					} 
+				}
+			});
+		};
+		 */
+		/* 实时更新船的位置 */
+		function updateMap(){
+			//获取ships的点信息 
+			$.post("./adhoc/getShipMap", function(req) {
+				if (req.code == 1000) {
+					var shipOptions = '<option value=-1> ---请选择---</option>';
+					shipArray=[];
+					var lat=0;
+					var lng=0;
+					var sapNum=0; //海口新港区域内船的数量
+					var sapNum1=0; //海安老港区域内船的数量
+					var sapNum2=0; //海安新港区域内船的数量
+					var sapNum3=0; //海口秀英港区域内船的数量
+					var view=false; //是否显示船名
+					//遍历得到JOSN中的项的数据(先将json数据转换成标注的javascript数据 )
+					var data = req.data.rows;; //转换为标准的javaScript 数据 					
+					/* var text = eval('('+data+')'); */										
+					//对弹出的消息窗口进行 尺寸规定 
+					var opts = {
+						width:250,
+						height:80,
+						title:"船站信息",
+						enableMessage:false
+					};					
+					$.each(data,function(index,obj){
+						//if( obj.sStatus ==1 )
+						if((obj.sGpsLongitude != 0 && obj.sGpsLatitude != 0) || (obj.sLatitude != 0 && obj.sLongitude != 0))
+						{
+							
+						    view=false;
+							if(1 == obj.version){
+								var thisIcon = shipIcon;
+							}else if(0 == obj.version){
+								var thisIcon = shipIcon3;
+							}else{
+								var thisIcon = shipIcon2;
+								var timestamp = new Date().getTime();
+								if((timestamp - obj.utc) > 2 * 60 * 60 * 1000){
+									var thisIcon = shipOffline;
+								}
+							}
+							var marker;
+							var redMarker;
+							var sName = '';
+							if(null != obj.sName && '' != obj.sName){
+								sName = obj.sName
+							}else{
+								sName = obj.sId;
+							}
+							var content = "名称:"+sName
+									+"<br/>GPS:<br/>经度:"+obj.sGpsLongitude+" 纬度:"+obj.sGpsLatitude
+									+"<br/>AIS:<br/>经度:"+obj.sLongitude+" 纬度:"+obj.sLatitude
+									//+"<br/>高度:"+obj.sHeight+"<br/>IP:"+obj.sIp+"<br/>安装日期:"+obj.sInstallDate
+									+"<br/>船首向:"+obj.heading+"<br/>航速:"+obj.sog+"<br/>最后更新时间:"+ $.myTime.UnixToDate(obj.utc);
+							if(obj.sGpsLongitude != 0 && obj.sGpsLatitude != 0){
+								redMarker= new L.marker([obj.sGpsLatitude, obj.sGpsLongitude], {icon: redboxIcon});
+								marker = new L.marker([obj.sGpsLatitude, obj.sGpsLongitude], 
+										{icon: L.icon({iconUrl: thisIcon.setRotation({deg: obj.heading }).getUrl() , iconSize: [40,40]} )}); //iconUrl
+								
+							}else if(obj.sLongitude != 0 && obj.sLongitude != 0){
+								redMarker= new L.marker([obj.sLatitude, obj.sLongitude], {icon: redboxIcon});								
+								marker = new L.marker([obj.sLatitude, obj.sLongitude], 
+										{icon: L.icon({iconUrl: thisIcon.setRotation({deg: obj.heading }).getUrl() , iconSize: [40,40]} )}); // 
+								
+							}
+									
+							if( 0!= obj.version && Lmap.getZoom()>=14){	
+								lat=marker.getLatLng().lat;
+								lng=marker.getLatLng().lng;
+								if(lat >20.0491 && lat < 20.059863 &&lng<110.15174 && lng>110.141784){
+									if(Lmap.getZoom()<=15){										
+										if(sapNum<1){
+											view=true;
+											sapNum++;
+										}
+									}else if(Lmap.getZoom()<=16){										
+										if(sapNum<3){
+											view=true;
+											sapNum++;
+										}
+									}else{
+										view=true;									
+									}
+								}else if(lat >20.268412 && lat < 20.273259 &&lng<110.233537 && lng>110.228454){
+									if(Lmap.getZoom()<=15){										
+										if(sapNum1<1){
+											view=true;
+											sapNum1++;
+										}
+									}else if(Lmap.getZoom()<=16){										
+										if(sapNum1<3){
+											view=true;
+											sapNum1++;
+										}
+									}else{
+										view=true;									
+									}
+								}else if(lat >20.264795 && lat < 20.271921 &&lng<110.233537 && lng>110.207987){
+									if(Lmap.getZoom()<=15){										
+										if(sapNum2<1){
+											view=true;
+											sapNum2++;
+										}
+									}else if(Lmap.getZoom()<=16){										
+										if(sapNum2<3){
+											view=true;
+											sapNum2++;
+										}
+									}else{
+										view=true;									
+									}
+								}else if(lat >20.021618 && lat < 20.031324 &&lng<110.285879 && lng>110.274199){
+									if(Lmap.getZoom()<=15){										
+										if(sapNum3<1){
+											view=true;
+											sapNum3++;
+										}
+									}else if(Lmap.getZoom()<=16){										
+										if(sapNum3<3){
+											view=true;
+											sapNum3++;
+										}
+									}else{
+										view=true;									
+									}
+								}else {
+								 	view=true;
+								}								
+							}
+							if(view==true){
+								marker.addTo(Lmap).bindTooltip(obj.sName, {
+		                        	permanent : true,
+		                        	offset : [ 0, 8 ],// 偏移
+		                        	direction : "bottom",// 放置位置
+		                        	className : 'anim-tooltip'// CSS控制
+		                    	}) .openTooltip().bindPopup(content);
+							}else{
+								marker.openTooltip().bindPopup(content);
+							}
+							
+							marker.on('click', function(e) {																					
+								//redMarker.setZIndexOffset(10000);
+								if(redboxmarker != ""){
+									Lmap.removeLayer(redboxmarker);	
+								}
+								setsId=obj.sId;								
+								redboxmarker=redMarker;
+								Lmap.addLayer(redMarker);
+							});
+							Lmap.addLayer(marker);
+							markerArray.push(marker);
+							if(obj.sId != -1 && setsId == obj.sId){
+								if(redboxmarker != ""){
+									Lmap.removeLayer(redboxmarker);
+									redboxmarker=redMarker;
+									Lmap.addLayer(redMarker);
+								}
+								marker.openPopup();
+							}	
+							//往集合中增加 数据 
+							if(obj.sName!="" && obj.sName!=" " && obj.sName !=null && 0!= obj.version){
+								if(obj.version==1){
+									shipArray.unshift(obj);																										
+								}else{
+									shipArray.push(obj);									
+								}								
+							}
+							//连网时，进行画线
+						 	if(obj.sStatus ==1){
+							    //GPS坐标为空时，取GPS
+						 		if(obj.lGpsLongitude != "" && obj.lGpsLatitude != "" && obj.lGpsLongitude != 0 && obj.lGpsLatitude != 0){
+									var arrayObj = new Array();	
+							    	arrayObj.push([obj.sGpsLatitude, obj.sGpsLongitude]);
+							    	arrayObj.push([obj.lGpsLatitude, obj.lGpsLongitude]);
+							    	var polygon = L.polygon(arrayObj, {color: 'green'}).addTo(Lmap);
+							    	markerArray.push(polygon);
+							    //AIS坐标不为空   取AIS
+								}else if (obj.lLongitude != "" && obj.lLatitude != "" && obj.lLongitude != 0 && obj.lLatitude != 0) {
+						 			var arrayObj = new Array();	
+							    	arrayObj.push([obj.sLatitude, obj.sLongitude]);
+							    	arrayObj.push([obj.lLatitude, obj.lLongitude]);
+							    	var polygon = L.polygon(arrayObj, {color: 'green'}).addTo(Lmap);
+							    	markerArray.push(polygon);
+								}
+						 	}
+							
+							//addClickHandler(marker,content)
+						}
+					});					
+				} else {
+					$scope.ships = null;
+				}
+			});
+		};
+		
+		//此方法定时去执行 读取当前 数据显示在地图的操作(实现地图实时刷新)
+		setInterval(function(){   
+			//清除以前标记
+			cleanMarker(markerArray);
+			//增加实时标记
+			updateMap();
+		},30000);
+		
+		
+		//清除地图标记的marker对象
+		function cleanMarker(array){
+			for (var i = 0; i < array.length; i++) {
+				Lmap.removeLayer(array[i]);
+			}
+				markerArray = [];
+		}
+		
+		
+	};
+	
+	//--加入点击事件 
+	function addClickHandler(marker,content){
+		marker.addEventListener("click",function(e){
+			openInfo(e,content)}
+		);
+	};
+	//打开弹出消息窗口
+	function openInfo(e,content){
+		var p = e.target;
+		var point = new BMap.Point(p.getPosition().lng, p.getPosition().lat);
+		//创建检索信息窗口对象
+	    var searchInfoWindow = null;
+		searchInfoWindow = new BMapLib.SearchInfoWindow(map, content, {
+				title  : p.getTitle(),     //标题
+				width  : 290,              //宽度
+				height : 140,              //高度
+				panel  : "panel",          //检索结果面板
+				enableAutoPan : true ,     //自动平移
+			 	searchTypes   :[
+					BMAPLIB_TAB_SEARCH,    //周边检索
+					BMAPLIB_TAB_TO_HERE,   //到这里去
+					BMAPLIB_TAB_FROM_HERE  //从这里出发
+				] 
+			}); 
+		searchInfoWindow.open(point);
+	};
+	
+	
+	
+	//岸站下拉菜单的选项发生变化时 获取选中的项的 id
+	function nodeBanksChange(){
+		var index = $("#nodeBanks").val(); //该index是选中option项的角标,也是obj数组的角标 ,通过他得到节点信息对象 
+		var obj = bankArray[index]; // 通过index 得到节点对象 
+		//var p = new BMap.Point(obj.lLongitude, obj.lLatitude);//生成位置点 
+		//map.panTo(p); //移动到该点 
+		Lmap.panTo(L.latLng(obj.lLatitude,obj.lLongitude));
+		 
+		document.getElementById("nodeShips").value="-1";
+	};
+	
+	//船站下拉菜单的选项发生变化时 获取选中的项的 id
+	function nodeShipsChange(){
+		var redboxIcon = L.icon({iconUrl: 'images/redbox.png', iconSize: [40,40]});	
+		var index = $("#nodeShips").val();  				  //该index是选中option项的角标,也是obj数组的角标 ,通过他得到节点信息对象 
+		if(-1 == index) return;
+		var obj = shipArray[index]; 						  // 通过index 得到节点对象 
+		//var p = new BMap.Point(obj.sLongitude, obj.sLatitude);//生成位置点 
+		//map.panTo(p); //移动到该点 
+		var redMarker;
+		if(obj.sGpsLongitude != 0 && obj.sGpsLatitude != 0){
+			Lmap.panTo({lat: obj.sGpsLatitude , lng: obj.sGpsLongitude});
+			redMarker= new L.marker([obj.sGpsLatitude, obj.sGpsLongitude], {icon: redboxIcon});			
+		}else if (obj.sLongitude != 0 && obj.sLongitude != 0){
+			Lmap.panTo({lat: obj.sLatitude, lng: obj.sLongitude});
+			redMarker= new L.marker([obj.sLatitude, obj.sLongitude], {icon: redboxIcon});
+		}
+		for (var i = 0; i < markerArray.length; i++) {
+			if((markerArray[i]._latlng.lat == obj.sLatitude && markerArray[i]._latlng.lng == obj.sLongitude)
+					|| (markerArray[i]._latlng.lat == obj.sGpsLatitude && markerArray[i]._latlng.lng == obj.sGpsLongitude)){
+				markerArray[i].openPopup();
+			}
+		}
+		if(redboxmarker != ""){
+			Lmap.removeLayer(redboxmarker);	
+		}
+		setsId=obj.sId;
+		redboxmarker=redMarker;
+		Lmap.addLayer(redMarker);
+		document.getElementById("nodeBanks").value="-1";
+	};
+	
+	//加入固定的label信息 
+	function addlabel() {
+		var circleStyle = {color: 'red',fillColor: '#f03',fillOpacity: 0.5,radius: 500};
+		var topStyle = {permanent : true,offset : [ 0, 0 ],direction : "top",className : 'anim-tooltip'};
+		L.circle([23.703799, 121.716076], circleStyle).addTo(Lmap).bindTooltip("台湾是中国的！", topStyle).openTooltip();
+		L.circle([14.570616, 112.121885], circleStyle).addTo(Lmap).bindTooltip("南海是中国的！", topStyle).openTooltip();
+		L.circle([25.695422, 123.776573], circleStyle).addTo(Lmap).bindTooltip("钓鱼岛是中国的！", topStyle).openTooltip();
+	};
+	
+	//加载船舶时根据船首向旋转图片
+	var RotateIcon = function (options) {
+		this.options = options || {}; 
+		this.rImg = options.img || new Image(); 
+		this.rImg.src = this.rImg.src || this.options.url || '';
+		this.options.width = this.options.width || 35|| 35;
+		this.options.height = this.options.height || 35 || 35;
+		canvas = document.createElement("canvas");
+		canvas.width = this.options.width;
+		canvas.height = this.options.height;
+		this.context = canvas.getContext("2d");
+		this.canvas = canvas; 
+	};
+	//新建一个图片对象
+	RotateIcon.makeIcon = function (url) { 
+		return new RotateIcon({url: url}); 
+	};
+	//设置图片旋转角度
+	RotateIcon.prototype.setRotation = function (options) { 
+		var canvas = this.context, angle = options.deg ? options.deg * Math.PI / 180 : options.rad, centerX = this.options.width / 2, centerY = this.options.height / 1.6; 
+		canvas.clearRect(0, 0, this.options.width, this.options.height); 
+		canvas.save(); 
+		canvas.translate(centerX, centerY); 
+		canvas.rotate(angle); 
+		canvas.translate(-centerX, -centerY); 
+		canvas.drawImage(this.rImg, 10, 10); 
+		canvas.restore(); return this; 
+		}; 
+	//获取旋转后图片的新base64 数据
+	RotateIcon.prototype.getUrl = function () { 
+		var dataURL = this.canvas.toDataURL('image/png'); 
+        //dataURL = dataURL.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");		
+		return dataURL;
+	};    
+		
+	
+	//时间工具方法
+	(function($) {
+		$.extend({
+			myTime: {
+				UnixToDate: function(unixTime, isFull, timeZone) {
+					if(typeof(timeZone) == 'number') {
+						unixTime = parseInt(unixTime) + (parseInt(timeZone)+8) * 60 *
+							60;
+					}
+					//						var time = new Date(unixTime * 1000);
+					var time = new Date(unixTime + 8 * 60 * 60 * 1000);
+					var ymdhis = "";
+					ymdhis += time.getUTCFullYear() + "-";
+					ymdhis += (time.getUTCMonth() + 1) + "-";
+					ymdhis += time.getUTCDate() + " / ";
+					ymdhis += time.getUTCHours()+":";
+					ymdhis += time.getUTCMinutes();
+					
+					if(isFull === true) {
+						ymdhis += time.getUTCSeconds();
+					}
+					return ymdhis;
+				}
+			}
+		});
+
+	})(jQuery);
+</script>
+
+
+
+</html>

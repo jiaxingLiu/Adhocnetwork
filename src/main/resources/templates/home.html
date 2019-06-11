@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>自组网网管系统</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		
+		<script src="js/angular.min.js"></script>
+		<!-- bootstrap -->
+		<link href="css/bootstrap.css" rel="stylesheet" />			
+		<!-- global styles -->
+		<link rel="stylesheet" type="text/css" href="css/layout.css" />	
+		<!-- bootstrap table css -->
+		<link rel="stylesheet" type="text/css" href="css/bootstrap-table.css" />	
+	</head>
+	
+	<body>
+		<!-- navbar -->
+		<div class="navbar navbar-inverse" role="navigation">
+			<div class="container-fluid">
+				<div class="navbar-inner">
+					<div class="navbar-header">
+						<a class="navbar-brand" href="#">无基站自组网网管系统</a>
+					</div>
+					<!-- <ul class="nav navbar-nav navbar-right">
+						<li>
+							<a href="#" ng-bind="username"></a>
+						</li>
+						<li ng-hide="isLogin">
+							<a href="login.html"></a>
+						</li>
+						<li>
+							<a href="#" onclick="logout()">注销</a>
+						</li>
+					</ul> -->
+				</div>
+			</div>
+		</div>
+		<!-- end navbar -->
+
+		<!-- sidebar -->
+		<div id="sidebar-nav">
+			<ul id="dashboard-menu">
+				<li  class="active">
+					<a href="home"> 
+					 <div class="pointer">
+						<div class="arrow"></div>
+						<div class="arrow_border"></div>
+					 </div>
+					<span>基本信息</span>
+					</a>
+				</li>
+				<li>
+					<a href="adhoctables">
+						 <span>组网显示</span>
+					</a>
+				</li>
+				<li>
+					<a href="shiptables">
+					 	<span>船站显示</span>
+					</a>
+				</li>		
+				<li>
+					<a href="map"> 
+						<span>地图显示</span>
+					</a>
+				</li>
+			</ul>
+		</div>
+		<!-- end sidebar -->
+
+		<!-- main container -->
+		<div class="content" style="height: 100%">
+
+			<div class="container-fluid">
+				<div id="pad-wrapper">
+					<!-- products table-->
+					<!-- the script for the toggle all checkboxes from header is located in js/theme.js -->
+					<div class="table-wrapper products-table section">
+						<div class="row-fluid head">
+							<div class="span12">
+								<h4>基本信息</h4>
+							</div>
+						</div>
+					    <div class="row-fluid">		
+					    	<div class="col-md-12" style="margin-top:10px">
+					    		<div class="col-md-6">
+							        <span class="home-title col-sm-6 col-md-4"><strong>船站编号：</strong></span> <span class="col-sm-6 col-md-8" id="shipCode"></span>
+						        </div>
+							    <div class="col-md-6">
+								<span class="home-title col-sm-6 col-md-4"><strong>AIS纬度：</strong></span> <span class="col-sm-6 col-md-8" id="aislat"></span>
+							    </div>
+				           </div>
+				          <div class="col-md-12">
+								<div class="col-md-6">
+									<span class="home-title col-sm-6 col-md-4"><strong>船站名称：</strong></span> <span class="col-sm-6 col-md-8" id="shipName"></span>
+								</div>
+								<div class="col-md-6">
+									<span class="home-title col-sm-6 col-md-4"><strong>AIS经度：</strong></span> <span class="col-sm-6 col-md-8" id="aislng"></span>
+								</div>
+						 </div>
+						 <div class="col-md-12">
+								<div class="col-md-6">
+									<span class="home-title col-sm-6 col-md-4"><strong>船站端口：</strong></span> <span class="col-sm-6 col-md-8" id="shipPort"></span>
+								</div>
+								<div class="col-md-6">
+									<span class="home-title col-sm-6 col-md-4"><strong>GPS纬度：</strong></span> <span class="col-sm-6 col-md-8" id="gpslat"></span>
+								</div>
+							</div>
+							<div class="col-md-12">
+								<div class="col-md-6">
+									<span class="home-title col-sm-6 col-md-4"><strong>IP地址：</strong></span> <span class="col-sm-6 col-md-8" id="shipIp"></span>
+								</div>
+								<div class="col-md-6">
+									<span class="home-title col-sm-6 col-md-4"><strong>GPS经度：</strong></span> <span class="col-sm-6 col-md-8" id="gpslng"></span>
+								</div>
+							</div>
+							<div class="col-md-12">
+								<div class="col-md-6">
+									<span class="home-title col-sm-6 col-md-4"><strong>MMSI：</strong></span><span class="col-sm-6 col-md-8" id="shipMmsi"></span>
+								</div> 
+								<div class="col-md-6">
+									<span class="home-title col-sm-6 col-md-4"><strong>安装日期：</strong></span> <span class="col-sm-6 col-md-8" id="installDate"></span>
+								</div>						       
+					    	</div>		         
+							<div class="col-md-12">
+								<div class="col-md-6">
+									<span class="home-title col-sm-6 col-md-4"><strong>状态：</strong></span><span class="col-sm-6 col-md-8" id="shipStatus"></span>
+								</div> 
+								<div class="col-md-6">
+									<span class="home-title col-sm-6 col-md-4"><strong>安装高度：</strong></span> <span class="col-sm-6 col-md-8" id="installHeight"></span>
+								</div>						       
+					    	</div>		         
+					    </div>					    				
+				    </div>				    				    
+	          </div>						
+		   </div>	
+		   <HR style="FILTER: alpha(opacity=100,finishopacity=0,style=3)" width="99%" color=#987cb9 SIZE=1>
+		          <div>
+						
+						<div class="row-fluid head" style="margin-top:20px;margin-left:60px">
+							<div class="span12">
+								<h4>天线信息</h4>
+							</div>
+						</div>
+						<div class="row-fluid" style="margin-top:20px;margin-left:60px">	
+							<div id="antenna" style="margin: 12px 10px">
+	   		                     <table id="antennatable"></table>
+	   		                 </div>							   						
+						</div>  
+		         </div>	   				   		   
+		  </div>	
+ 	
+		<!-- scripts -->
+		<script src="js/jquery-3.1.1.min.js"></script>
+		<script src="js/bootstrap.min.js"></script>	
+		<script src="js/bootstrap-table.js"></script>
+		<script src="js/bootstrap-table-zh-CN.js"></script>	           
+		<script>
+		   $(document).ready(function() {
+			   
+			   //初始化表格
+			   $('#antennatable').bootstrapTable({					   
+				   "url" : "./adhoc/getOneselfShipInfo",	   
+				   "responseHandler":function(data){		   
+					   if(data.code==1000){ 
+						   if (data.data!= null) {
+							   
+							   var shipInfo = JSON.parse(data.data);
+							   
+							   $("#shipCode").text(shipInfo.shipCode);
+							   $("#aislat").text(shipInfo.aislat);
+							   $("#aislng").text(shipInfo.aislng);
+							   $("#gpslat").text(shipInfo.gpslat);
+							   $("#gpslng").text(shipInfo.gpslng);
+							   $("#installDate").text(shipInfo.installDate);
+							   $("#installHeight").text(shipInfo.installHeight);
+							   $("#shipIp").text(shipInfo.shipIp);
+							   $("#shipMmsi").text(shipInfo.shipMmsi);
+							   $("#shipName").text(shipInfo.shipName);
+							   $("#shipPort").text(shipInfo.shipPort);
+							   var shipStatus = shipInfo.shipStatus;
+							   var txt = "";
+							   if(shipStatus == "0"){
+								   txt = "未组网";
+								   $("#shipStatus").attr("style","color:red");
+							   }else{
+								   txt = "已组网";
+								   $("#shipStatus").attr("style","color:green");
+							   }
+							   $("#shipStatus").text(txt);
+							   
+								//先进行排序
+								var aerialsList = shipInfo.aerialsList;
+								aerialsList = aerialsList.sort(function (a, b) {
+								    // 按节点ID字符串，进行排序
+								     let param1 = a.aerialsCode;
+								     let param2 = b.aerialsCode;
+								     return param1.localeCompare(param2, "zh");
+								});
+							   return {					
+								   "rows" : aerialsList
+							   };
+						   } else {
+							   return {
+								   "rows" : []
+							   }
+						   }
+					   }else{
+						   return {
+							   "rows" : []
+						   }
+					   }
+				    },				  
+					method : 'post',
+					// url:
+					// "${pageContext.request.contextPath}/statistics/statisticsHistory",//这个接口需要处理bootstrap
+					// table传递的固定参数
+					contentType : "application/json;charset=utf-8",// 必须要有！！！！
+					// data:data.data.shipLogList,
+					// toolbar: '#toolbar', //工具按钮用哪个容器
+					striped : true, // 是否显示行间隔色
+					cache : false, // 是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+					//pagination : true, // 是否显示分页（*）
+					paginationLoop : false,// 启用分页无限循环的功能,默认为true,设置为false
+					sortable : true, // 是否启用排序
+					//sortOrder : "ID asc", // 排序方式
+					pageNumber : 1, // 初始化加载第一页，默认第一页
+					pageSize : 5, // 每页的记录行数（*）
+					pageList : [5, 10, 15], // 可供选择的每页的行数（*）
+					sidePagination : "server", // 分页方式：client客户端分页，server服务端分页（*）
+					// search: true, //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+					strictSearch : true,
+					// showColumns: true, //是否显示所有的列
+					//showRefresh: true, //是否显示刷新按钮
+					minimumCountColumns : 2, // 最少允许的列数
+					//clickToSelect : true, // 是否启用点击选中行
+					searchOnEnterKey : true,
+					sortable : true,	
+					/*onCheck:function(row, $element){
+						 $('#opeLogsTable').tableExport.reset();
+					},
+					onUncheck:function(row, $element){
+						 $('#opeLogsTable').tableExport.reset();			
+					},*/
+					columns : [
+						/*{
+			                checkbox: true,  
+			                visible: true     //是否显示复选框 (先这样) 
+			            },*/{
+						title : "天线编号",
+						field : "aerialsCode",
+						align : "center",
+						valign : "middle"
+						/* 					
+						sortable : true,
+					    formatter: function (value, row, index) {				 				 
+							  return index+1;;
+							 } */
+						}, {
+						title : "天线IP",
+						field : "aerialsIp",
+						align : "center",
+						valign : "middle"
+					}, {
+						title : "天线类型",
+						field : "aerialsType",
+						align : "center",
+						valign : "middle",						
+					}, {
+						title : "频点",
+						field : "point",
+						align : "center",
+						valign : "middle"
+						//sortable : true
+					},{
+						title : "SSID",
+						field : "ssid",
+						align : "center",
+						valign : "middle"
+						//sortable : true
+					},{
+						title : "状态",
+						field : "status",
+						align : "center",
+						valign : "middle",
+						formatter:function (value, row, index) {				 				 
+							 if(value == "0" ){
+								 return '<span style="color:red">断开</span>';
+							  }else if(value == "1"){
+								 return '<span style="color:green">连接中</span>';
+							  }
+						}
+					}]
+				});
+		   });
+		</script>
+	</body>
+</html>

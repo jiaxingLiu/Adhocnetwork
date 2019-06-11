@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>自组网网管系统</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />		
+<script src="js/angular.min.js"></script>
+<!-- bootstrap -->
+<link href="css/bootstrap.css" rel="stylesheet" />			
+<!-- global styles -->
+<link rel="stylesheet" type="text/css" href="css/layout.css" />	
+<!-- bootstrap table css -->
+<link rel="stylesheet" type="text/css" href="css/bootstrap-table.css" />	
+</head>
+<!-- scripts -->
+<script src="js/jquery-3.1.1.min.js"></script>
+<script src="js/bootstrap.min.js"></script>	
+<script src="js/bootstrap-table.js"></script>
+<script src="js/bootstrap-table-zh-CN.js"></script>	  
+ 
+<style>
+   .table { width: 800px;line-height: 25px; text-align: center; border-collapse:separate;border-spacing:3px;}  
+   .table a {color: black;text-decoration: none}
+   .texttd{border-collapse:   separate;   border-spacing:   10px;background: #ADFEDC}
+   .texttd-black{border-collapse:   separate; border-spacing:10px;background: #9D9D9D}
+   .linetd{border-bottom:#cccccc solid 2px;}
+</style>
+
+<script type="text/javascript">
+
+
+$(function(){
+	//加载后台数据，获取组网下的船站及天线信息，根据组网天线的信息排序
+	$.ajax({
+    	type : "POST",
+ 		url : "./adhoc/getAdhocVo",	
+ 		data : '',
+ 		contentType : "application/json;charset=utf-8",
+ 		timeout : 5000,
+ 		dataType : "json",
+ 		success : function(data) {
+ 			var adhocCode;
+ 			var shipCode;
+ 			var result = data.data.rows;
+ 			for (var i = 0; i < result.length; i++) {
+ 				//标题赋值
+ 				adhocCode = result[i].adhocCode;
+ 				var adName = result[i].adhocName;
+ 				$("#adhoctitle" + i).find("h4").html("<a style='text-decoration: none' href='javascript:void(0)'>" + adName + "</a>");
+ 				$("#adhoctitle" + i).find("h4").find("a").bind('click',{adhocCode:adhocCode},function(event){
+ 					getAdhocInfo(event.data.adhocCode);
+				});
+ 				//本船
+ 				shipCode = result[i].shipCode;
+ 				var sName = result[i].shipName;
+ 				var ships = result[i].ship;
+ 				var nextship;//被连的船站编号
+ 				var tableobj = $("#viewTable" + i);
+ 				//给th赋值
+ 				tableobj.find("th").eq(0).html("<a href='javascript:void(0)'>" + adName + "-" + sName + "</a>");
+ 				tableobj.find("th").eq(0).find("a").bind('click',{adhocCode:adhocCode,shipCode:shipCode},function(event){
+ 					getShipInfo(event.data.adhocCode,event.data.shipCode);
+				});
+ 				var tds = tableobj.find("tr").find("td:eq(0)");//获取第一列的所有行记录
+ 				var indexs = [0,2,4,6];//天线列的行下标
+ 				var nowship = ships[shipCode];
+ 				var alist = nowship.aerialsList;//当前船站的天线列表
+ 				//遍历天线然后填充到具体的列中
+ 				for (var j = 0; j < alist.length; j++) {
+ 					//给td赋值
+ 					tds.eq(indexs[j]).html("<a href='javascript:void(0)'>" + alist[j].aerialsCode + "</a>");
+ 					tds.eq(indexs[j]).find("a").bind('click',{adhocCode:adhocCode,shipCode:nowship.shipCode},function(event){
+ 	 					getShipInfo(event.data.adhocCode,event.data.shipCode);
+ 					});
+ 					if("0" == alist[j].linkType){
+	 					nextship = alist[j].linkShipCode;
+	 					tds.eq(indexs[j]).attr("class","texttd");
+	 					tds.eq(indexs[j]).next().attr("class","linetd");
+ 					}else{
+ 						tds.eq(indexs[j]).attr("class","texttd-black");
+ 					}
+				}
+ 				
+ 				//组网船
+ 				var shipslen = Object.getOwnPropertyNames(ships).length;//组网船的个数  减1是去掉本船
+ 				if(shipslen > 1){
+ 					//减1是去掉本船
+ 					shipslen  = shipslen - 1;
+ 					
+	 				var flag = true;//是否需要调换进出线的位置
+	 				var thindexs = [2,4,6,8,10];//天线列的行下标
+	 				for (var k = 0; k < shipslen; k++) {
+	 					
+	 					nowship = ships[nextship];
+	 					shipCode = nowship.shipCode;
+	 					alist = nowship.aerialsList;//当前船站的天线列表
+	 					//先进行排序
+						alist = alist.sort(function (a, b) {
+						     // 按节点ID字符串，进行排序
+						     let param1 = a.linkType;
+						     let param2 = b.linkType;
+						     return param1.localeCompare(param2, "zh");
+						});
+	 					//调换位置
+	 					if(flag){
+	 						var temp = alist[1];
+	 						alist[1] = alist[0];
+	 						alist[0] = temp;
+	 						flag = false;
+	 					}else{
+	 						flag = true;
+	 					}
+	 					//最后一个组网船只有被连 (shipslen == 1 || shipslen == 2 || shipslen == 3 || shipslen == 4 || shipslen == 5) &&
+	 					if(shipslen - k == 1){
+	 						var temp = alist[1];
+	 						alist[1] = alist[0];
+	 						alist[0] = temp;
+	 						flag = false;
+	 					}
+	 	 				//给th赋值
+	 	 				tableobj.find("th").eq(thindexs[k]).html("<a href='javascript:void(0)'>" + adName + "-" + nowship.shipName + "</a>");
+	 	 				tableobj.find("th").eq(thindexs[k]).find("a").bind('click',{adhocCode:adhocCode,shipCode:nowship.shipCode},function(event){
+	 	 					getShipInfo(event.data.adhocCode,event.data.shipCode);
+	 					});
+	 	 				//获取第一列的所有行记录
+	 					tds = tableobj.find("tr").find("td:eq("+thindexs[k]+")");//.find("td[rowspan=2]")
+	 					
+	 					//遍历天线然后填充到具体的列中
+	 	 				for (var h = 0; h < alist.length; h++) {
+	 	 					//取当前列的所有记录时，有时会取到所有的，有时只取到合并列的 合并列只有4列
+	 	 					if(tds.length > 4){
+	 	 						
+	 	 						if("0" == alist[h].linkType){
+	 	 		 					nextship = alist[h].linkShipCode;
+	 	 		 					tds.eq(indexs[h]).attr("class","texttd");
+	 	 		 					tds.eq(indexs[h]).next().attr("class","linetd");
+	 	 	 					}else if("1" == alist[h].linkType){
+	 	 	 						tds.eq(indexs[h]).attr("class","texttd");
+	 	 	 					}else{
+	 	 	 						tds.eq(indexs[h]).attr("class","texttd-black");
+	 	 	 					}
+	 	 						//给td赋值
+	 	 						tds.eq(indexs[h]).html("<a href='javascript:void(0)');'>" + alist[h].aerialsCode + "</a>");
+	 	 						tds.eq(indexs[h]).find("a").bind('click',{adhocCode:adhocCode,shipCode:nowship.shipCode},function(event){
+	 	 	 	 					getShipInfo(event.data.adhocCode,event.data.shipCode);
+	 	 	 					});
+	 	 					}else{
+		 	 					if("0" == alist[h].linkType){
+		 		 					nextship = alist[h].linkShipCode;
+		 		 					tds.eq(h).attr("class","texttd");
+		 		 					tds.eq(h).next().attr("class","linetd");
+		 	 					}else if("1" == alist[h].linkType){
+		 	 						tds.eq(h).attr("class","texttd");
+		 	 					}else{
+		 	 						tds.eq(h).attr("class","texttd-black");
+		 	 					}
+		 	 					//给td赋值
+	 	 						tds.eq(h).html("<a href='javascript:void(0)'>" + alist[h].aerialsCode + "</a>");
+	 	 						tds.eq(h).find("a").bind('click',{adhocCode:adhocCode,shipCode:nowship.shipCode},function(event){
+	 	 	 	 					getShipInfo(event.data.adhocCode,event.data.shipCode);
+	 	 	 					});
+	 	 					}
+	 					}
+					}
+ 				}
+	 			//图表数据加载完成后，手动触发查询组网信息
+	 			if(shipslen > 1){//有组网时，显示组网信息
+	 				$("#adhoctitle0").find("h4").find("a").click();
+	 			}else{//只有本船时，显示船站及天线信息
+	 				$("#adhoctitle0").find("h4").hide();
+	 				$("#viewTable0").find("th").eq(0).find("a").click();
+	 			}
+			}
+ 		}
+     });
+
+ /**
+  *获取指定组网下的所有船站的信息
+  */   
+ function getAdhocInfo(aCode){
+    $.ajax({
+    	type : "POST",
+ 		url : "./adhoc/getAdhocByCode",	
+ 		data : aCode,
+ 		contentType : "application/json;charset=utf-8",
+ 		timeout : 5000,
+ 		dataType : "json",
+ 		success : function(data) {
+ 			//隐藏船站和天线div 并显示组网div
+ 			$("#adhocdiv").show(); 			
+ 			$("#shipdiv").hide();
+ 			$("#aerialsdiv").hide(); 
+ 			//先进行排序
+			var tempData = data.data.rows;
+ 			if(tempData){
+				tempData = tempData.sort(function (a, b) {
+				    // 按节点ID字符串，进行排序
+				     let param1 = a.linkNum;
+				     let param2 = b.linkNum;
+				     return param1.localeCompare(param2, "zh");
+				});
+	 		    // 清理表格数据				
+				$("#adhocTable").bootstrapTable("removeAll");
+				$("#adhocTable").bootstrapTable("append",tempData);	
+ 			}
+ 		}	 		
+     });
+ }
+/**
+ *获取指定船站及天线的信息
+ */  
+ function getShipInfo(aCode,sCode){
+	var param = {"adhocCode":aCode,"shipCode":sCode};
+	$.ajax({
+    	type : "POST",
+ 		url : "./adhoc/getShipInfoByCode",	
+ 		data : JSON.stringify(param),
+ 		contentType : "application/json;charset=utf-8",
+ 		timeout : 5000,
+ 		dataType : "json",
+ 		success : function(data) {
+ 			//显示船站和天线div 并隐藏组网div
+ 			$("#adhocdiv").hide();
+ 			$("#shipdiv").show();
+ 			$("#aerialsdiv").show(); 
+ 			//先进行排序
+			var tempData = data.data.rows;
+ 			if(tempData){
+				tempData = tempData.sort(function (a, b) {
+				    // 按节点ID字符串，进行排序
+				     let param1 = a.shipCode;
+				     let param2 = b.shipCode;
+				     return param1.localeCompare(param2, "zh");
+				});
+				//先进行排序
+				var aerialsList = data.data.rows[0].aerialsList;
+				aerialsList = aerialsList.sort(function (a, b) {
+				    // 按节点ID字符串，进行排序
+				     let param1 = a.aerialsCode;
+				     let param2 = b.aerialsCode;
+				     return param1.localeCompare(param2, "zh");
+				});
+			
+	 		    // 清理表格数据				
+	 			$("#shipTable").bootstrapTable("removeAll");
+	 			$("#shipTable").bootstrapTable("append",tempData);	
+	 		    // 清理表格数据				
+	 			$("#aerialsTable").bootstrapTable("removeAll");
+	 			$("#aerialsTable").bootstrapTable("append",aerialsList);	
+ 			}
+ 		}	 		
+     });
+ }
+ //----初始化船站信息表格--------------------
+ 
+ $('#shipTable').bootstrapTable({					   			   
+		contentType : "application/json;charset=utf-8",// 必须要有！！！！
+		striped : true, // 是否显示行间隔色
+		cache : false, // 是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+		//pagination : true, // 是否显示分页（*）
+		paginationLoop : false,// 启用分页无限循环的功能,默认为true,设置为false
+		sortable : true, // 是否启用排序
+		//sortOrder : "ID asc", // 排序方式
+		pageNumber : 1, // 初始化加载第一页，默认第一页
+		pageSize : 25, // 每页的记录行数（*）
+		pageList : [5, 10, 15], // 可供选择的每页的行数（*）
+		sidePagination : "server", // 分页方式：client客户端分页，server服务端分页（*）
+		// search: true, //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+		strictSearch : true,
+		// showColumns: true, //是否显示所有的列
+		// showRefresh: true, //是否显示刷新按钮
+		minimumCountColumns : 2, // 最少允许的列数
+		//clickToSelect : true, // 是否启用点击选中行
+		searchOnEnterKey : true,
+		sortable : true,	
+		/*onCheck:function(row, $element){
+			 $('#opeLogsTable').tableExport.reset();
+		},
+		onUncheck:function(row, $element){
+			 $('#opeLogsTable').tableExport.reset();			
+		},*/
+		columns : [
+			/*{
+                checkbox: true,  
+                visible: true     //是否显示复选框 (先这样) 
+            },*/{
+			title : "船站编号",
+			field : "shipCode",
+			align : "center",
+			valign : "middle"
+			/* 					
+			sortable : true,
+		    formatter: function (value, row, index) {				 				 
+				  return index+1;;
+				 } */
+			}, {
+			title : "船站名称",
+			field : "shipName",
+			align : "center",
+			valign : "middle"
+			/* sortable : true,
+			formatter: function (value, row, index) {	
+				  var date = new Date(value);
+				  return date.toLocaleString();
+				 }	 */				
+		}, {
+			title : "AIS经度",
+			field : "aislng",
+			align : "center",
+			valign : "middle",						
+		}, {
+			title : "AIS纬度",
+			field : "aislat",
+			align : "center",
+			valign : "middle"
+			//sortable : true
+		}, {
+			title : "GPS经度",
+			field : "gpslng",
+			align : "center",
+			valign : "middle",						
+		}, {
+			title : "GPS纬度",
+			field : "gpslat",
+			align : "center",
+			valign : "middle"
+			//sortable : true
+		}, {
+			title : "船站类型",
+			field : "shipType",
+			align : "center",
+			valign : "middle",
+			formatter:function (value, row, index) {				 				 
+				 if(value == "0" ){
+					 return '本船';
+				  }else if(value == "1"){
+					 return '组网船';
+				  }else{
+					  return '待组网船'; 
+				  }
+			}
+		}, {
+			title : "IP地址",
+			field : "shipIp",
+			align : "center",
+			valign : "middle"
+			//sortable : true
+		}, {
+			title : "船站状态",
+			field : "shipStatus",
+			align : "center",
+			valign : "middle",
+			formatter:function (value, row, index) {				 				 
+				 if(value == "0" ){
+					 return '<span style="color:red">未组网</span>';
+				  }else if(value == "1"){
+					 return '<span style="color:green">已组网</span>';
+				  }
+			}
+		}]
+	});
+ 
+	//---初始化天线信息表格-------
+	
+   $('#aerialsTable').bootstrapTable({
+		// url:
+		// "${pageContext.request.contextPath}/statistics/statisticsHistory",//这个接口需要处理bootstrap
+		// table传递的固定参数
+		contentType : "application/json;charset=utf-8",// 必须要有！！！！
+		// data:data.data.shipLogList,
+		// toolbar: '#toolbar', //工具按钮用哪个容器
+		striped : true, // 是否显示行间隔色
+		cache : false, // 是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+		//pagination : true, // 是否显示分页（*）
+		paginationLoop : false,// 启用分页无限循环的功能,默认为true,设置为false
+		sortable : true, // 是否启用排序
+		//sortOrder : "ID asc", // 排序方式
+		pageNumber : 1, // 初始化加载第一页，默认第一页
+		pageSize : 5, // 每页的记录行数（*）
+		pageList : [5, 10, 15], // 可供选择的每页的行数（*）
+		sidePagination : "server", // 分页方式：client客户端分页，server服务端分页（*）
+		// search: true, //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+		strictSearch : true,
+		// showColumns: true, //是否显示所有的列
+		//showRefresh: true, //是否显示刷新按钮
+		minimumCountColumns : 2, // 最少允许的列数
+		//clickToSelect : true, // 是否启用点击选中行
+		searchOnEnterKey : true,
+		sortable : true,	
+		/*onCheck:function(row, $element){
+			 $('#opeLogsTable').tableExport.reset();
+		},
+		onUncheck:function(row, $element){
+			 $('#opeLogsTable').tableExport.reset();			
+		},*/
+		columns : [
+		{
+			title : "天线编号",
+			field : "aerialsCode",
+			align : "center",
+			valign : "middle"
+			}, {
+			title : "天线IP",
+			field : "aerialsIp",
+			align : "center",
+			valign : "middle"
+		}, {
+			title : "天线类型",
+			field : "aerialsType",
+			align : "center",
+			valign : "middle",						
+		}, {
+			title : "频点",
+			field : "point",
+			align : "center",
+			valign : "middle"
+			//sortable : true
+		},{
+			title : "SSID",
+			field : "ssid",
+			align : "center",
+			valign : "middle"
+			//sortable : true
+		},{
+			title : "状态",
+			field : "status",
+			align : "center",
+			valign : "middle",
+			formatter:function (value, row, index) {				 				 
+				 if(value == "0" ){
+					 return '<span style="color:red">断开</span>';
+				  }else if(value == "1"){
+					 return '<span style="color:green">连接中</span>';
+				  }
+			}
+		}]
+	});
+	
+ 	//------------初始化组网信息表格-----------------------
+ 	
+    $('#adhocTable').bootstrapTable({					   			   
+		contentType : "application/json;charset=utf-8",// 必须要有！！！！
+		striped : true, // 是否显示行间隔色
+		cache : false, // 是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+		//pagination : true, // 是否显示分页（*）
+		paginationLoop : false,// 启用分页无限循环的功能,默认为true,设置为false
+		sortable : true, // 是否启用排序
+		//sortOrder : "ID asc", // 排序方式
+		pageNumber : 1, // 初始化加载第一页，默认第一页
+		pageSize : 25, // 每页的记录行数（*）
+		pageList : [5, 10, 15], // 可供选择的每页的行数（*）
+		sidePagination : "server", // 分页方式：client客户端分页，server服务端分页（*）
+		// search: true, //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+		strictSearch : true,
+		// showColumns: true, //是否显示所有的列
+		// showRefresh: true, //是否显示刷新按钮
+		minimumCountColumns : 2, // 最少允许的列数
+		//clickToSelect : true, // 是否启用点击选中行
+		searchOnEnterKey : true,
+		sortable : true,	
+		/*onCheck:function(row, $element){
+			 $('#opeLogsTable').tableExport.reset();
+		},
+		onUncheck:function(row, $element){
+			 $('#opeLogsTable').tableExport.reset();			
+		},*/
+		columns : [
+			[{
+			title : "组网链路",
+			field : "linkNum",
+			align : "center",
+			valign : "middle",
+			colspan: 1,
+			rowspan: 2
+			}, {
+			title : "主连接船",
+			field : "shipin",
+			align : "center",
+			valign : "middle",
+			colspan: 3,
+			rowspan: 1
+		}, {
+			title : "被连接船",
+			field : "shipout",
+			align : "center",
+			valign : "middle",	
+			colspan: 3,
+			rowspan: 1
+		}, {
+			title : "当前时间",
+			field : "currentTime",
+			align : "center",
+			valign : "middle",
+			colspan: 1,
+			rowspan: 2
+		}, {
+			title : "天线频点",
+			field : "point",
+			align : "center",
+			valign : "middle",
+			colspan: 1,
+			rowspan: 2
+		}, {
+			title : "天线SSID",
+			field : "ssid",
+			align : "center",
+			valign : "middle",
+			colspan: 1,
+			rowspan: 2
+		}, {
+			title : "连接状态",
+			field : "status",
+			align : "center",
+			valign : "middle",
+			colspan: 1,
+			rowspan: 2,
+			formatter:function (value, row, index) {				 				 
+				 if(value == "0" ){
+					 return '<span style="color:red">断开</span>';
+				  }else if(value == "1"){
+					 return '<span style="color:green">连接中</span>';
+				  }
+			}
+		}],
+		[
+			{
+				title : "船站名称",
+				field : "shipInName",
+				align : "center",
+				valign : "middle"
+			},
+			{
+				title : "天线编号",
+				field : "aerialsInCode",
+				align : "center",
+				valign : "middle"
+			},
+			{
+				title : "天线IP",
+				field : "aerialsInIp",
+				align : "center",
+				valign : "middle"
+			},
+			{
+				title : "船站名称",
+				field : "shipOutName",
+				align : "center",
+				valign : "middle"
+			},
+			{
+				title : "天线编号",
+				field : "aerialsOutCode",
+				align : "center",
+				valign : "middle"
+			},
+			{
+				title : "天线IP",
+				field : "aerialsOutIp",
+				align : "center",
+				valign : "middle"
+			}
+		]	
+		]
+	});
+ });
+</script>	
+<body>
+	<!-- navbar -->
+	<div class="navbar navbar-inverse" role="navigation">
+		<div class="container-fluid">
+			<div class="navbar-inner">
+				<div class="navbar-header">
+					<a class="navbar-brand" href="#">无基站自组网网管系统</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- end navbar -->
+
+	<!-- sidebar -->
+	<div id="sidebar-nav">
+		<ul id="dashboard-menu">
+			<li>
+				<a href="home"> 			
+				<span>基本信息</span>
+				</a>
+			</li>
+			<li class="active">
+				<a href="adhoctables">
+					<div class="pointer">
+						<div class="arrow"></div>
+						<div class="arrow_border"></div>
+					 </div>
+					 <span>组网显示</span>
+				</a>
+			</li>
+			<li>
+				<a href="shiptables">
+				 	<span>船站显示</span>
+				</a>
+			</li>		
+			<li>
+				<a href="map"> 
+					<span>地图显示</span>
+				</a>
+			</li>
+		</ul>
+	</div>
+	<!-- end sidebar -->
+
+	<!-- main container -->
+	<div class="content">
+	
+	<div class="container-fluid">
+		<div id="pad-wrapper">
+		<div class="table-wrapper products-table section">
+				<div class="row-fluid head">
+					<div class="span12" id="adhoctitle0">
+						<h4></h4>
+					</div>
+				</div>
+			    <div class="row-fluid">
+			         <div id="bank" style="margin: 12px 10px">
+  		                <!-- 组网图形1 -->
+						<table class="table" id="viewTable0">
+							<tr>
+								<th width="60px" style="border-top-style:none;text-align: center;"></th>
+								<th width="20px" style="border-top-style:none"></th>
+								<th width="60px" style="border-top-style:none;text-align: center;"></th>
+								<th width="20px" style="border-top-style:none"></th>
+								<th width="60px" style="border-top-style:none;text-align: center;"></th>
+								<th width="20px" style="border-top-style:none"></th>
+								<th width="60px" style="border-top-style:none;text-align: center;"></th>
+								<th width="20px" style="border-top-style:none"></th>
+								<th width="60px" style="border-top-style:none;text-align: center;"></th>
+								<th width="20px" style="border-top-style:none"></th>
+								<th width="60px" style="border-top-style:none;text-align: center;"></th>
+							</tr>
+							<tr>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td  style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td  style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+							</tr>
+							<tr>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+							</tr>
+							<tr>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td  style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td  style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+							</tr>
+							<tr>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+							</tr>
+							<tr>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td  style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td  style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+							</tr>
+							<tr>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+							</tr>
+							<tr>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td  style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td  style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td rowspan="2" style="border-top-style:none"></td>
+							</tr>
+							<tr>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+								<td style="border-top-style:none"></td>
+							</tr>
+						</table> 
+  		              </div>
+			    </div>
+		    </div>
+			<div class="table-wrapper products-table section" id="adhocdiv">
+				<div class="row-fluid head">
+					<div class="span12">
+						<h4>组网信息</h4>
+					</div>
+				</div>
+			    <div class="row-fluid">
+			         <div id="bank" style="margin: 12px 10px">
+  		                     <table id="adhocTable"></table>
+  		                 </div>
+			    </div>
+		    </div>
+		    
+			<div class="table-wrapper products-table section" id="shipdiv">
+				<div class="row-fluid head">
+					<div class="span12">
+						<h4>船站信息</h4>
+					</div>
+				</div>
+			    <div class="row-fluid">
+			         <div id="bank" style="margin: 12px 10px">
+  		                     <table id="shipTable"></table>
+  		                 </div>
+			    </div>
+		    </div>				 
+			<div class="table-wrapper products-table section" id="aerialsdiv">
+				<div class="row-fluid head">
+					<div class="span12">
+						<h4>天线信息</h4>
+					</div>
+				</div>
+			    <div class="row-fluid">
+			         <div id="bank" style="margin: 12px 10px">
+  		                     <table id="aerialsTable"></table>
+  		                 </div>
+			    </div>
+		    </div>
+	</div>
+   </div>	
+   </div>		
+</body>
+</html>
